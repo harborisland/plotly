@@ -1,0 +1,196 @@
+
+---
+title: "K-Means Clustering of @plotlygraphs Twitter Followers"
+author: Justin Marciszewski
+date: June 12. 2014
+output:
+  html_document:
+    theme: spacelab
+    toc: true
+    toc_depth: 3
+    number_sections: true
+---
+
+The following is a step by step instructions on how to replicate what I've created:
+[https://plot.ly/~hianalytics/168](https://plot.ly/~hianalytics/168)
+
+The hardest part is step 1 but the rest is straightforward.
+
+Contact me if you have any questions.
+
+Justin
+[](justin@harborislandanalytics.com)
+
+## Install Packages & Setup Twitter API 
+
+*[How To Link for Twitter API Setup](http://thinktostart.wordpress.com/2013/05/22/twitter-authentification-with-r/)*
+
+```{r eval=FALSE, warnings=FALSE, message=FALSE}
+library(rmarkdown)
+install.packages("twitteR", dependencies=T)
+library(twitteR)
+library(RCurl)
+
+# Set SSL certs globally
+options(RCurlOptions = list(cainfo = system.file("CurlSSL", "cacert.pem", package = "RCurl")))
+
+reqURL <- "https://api.twitter.com/oauth/request_token"
+accessURL <- "https://api.twitter.com/oauth/access_token"
+authURL <- "https://api.twitter.com/oauth/authorize"
+apiKey <- "YOURAPIKEY"
+apiSecret <- "YOURAPIKEY"
+ 
+twitCred <- OAuthFactory$new(consumerKey=apiKey,consumerSecret=apiSecret,requestURL=reqURL,accessURL=accessURL,authURL=authURL)
+````
+
+```{r eval=FALSE, warnings=FALSE, message=FALSE}
+# Running the next line of code brings up a response in the console with a link. Follow the link then copy/paste the ID like the instructions say
+twitCred$handshake(cainfo = system.file("CurlSSL", "cacert.pem", package = "RCurl"))
+# Verify your connection (results = TRUE if so)
+registerTwitterOAuth(twitCred)
+```
+
+```{r eval=FALSE, warnings=FALSE, message=FALSE}
+user <- getUser("plotlygraphs")
+userFriends <- user$getFriends()
+userFollowers <- user$getFollowers(n=1500)
+userNeighbors <- union(userFollowers, userFriends)
+userNeighbors.df = twListToDF(userNeighbors)
+```
+
+*NOTE: I recommend that you save the data locally that you collected from Twitter.  That way you don't have to re-do the hardest step and call the API each time you re-start this analysis*
+
+```{r eval=FALSE, warnings=FALSE, message=FALSE}
+setwd("/...") #set your working directory if not done already
+write.csv(userNeighbors.df, "userNeighbors_df.csv") 
+```
+
+```{r warnings=FALSE, message=FALSE}
+userNeighbors.df <- read.csv("userNeighbors_df.csv")
+str(userNeighbors.df)
+```
+
+---
+
+## Clean Data
+
+```{r warnings=FALSE, message=FALSE}
+#Remove 0's and Take Log
+userNeighbors.df[userNeighbors.df=="0"]<-1
+userNeighbors.df$logFollowersCount <- log(userNeighbors.df$followersCount)
+userNeighbors.df$logFriendsCount <- log(userNeighbors.df$friendsCount)
+userNeighbors.df$logStatusesCount <- log(userNeighbors.df$statusesCount) 
+#Isolate data for analysis
+kObject.log <- data.frame(userNeighbors.df$logFriendsCount,userNeighbors.df$logFollowersCount)
+```
+
+---
+
+## Elbow Plot - Estimate Number of Centers
+
+```{r warnings=FALSE, message=FALSE}
+mydata <- kObject.log
+wss <- (nrow(mydata)-1)*sum(apply(mydata,2,var))
+for (i in 2:15) wss[i] <- sum(kmeans(mydata,
+                                     centers=i)$withinss)
+
+plot(1:15, wss, type="b", xlab="Number of Clusters",
+     ylab="Within groups sum of squares")
+
+```
+
+#### *Seems like the "elbow" in the graph above is ~ 6 so we'll go with that in step 4...*
+
+---
+
+## k-means Clustering
+
+```{r warnings=FALSE, message=FALSE}
+##Run the K Means algorithm, specifying centers (6 centers)
+user2Means.log <- kmeans(kObject.log, centers=6, iter.max=10, nstart=100)
+
+##Add the vector of specified clusters back to the original vector as a factor
+userNeighbors.df$cluster <- factor(user2Means.log$cluster)
+```
+
+---
+
+## Plot.ly Scatter Plot of Results
+
+```{r warnings=FALSE, message=FALSE}
+#Copy data frame
+un.df <- userNeighbors.df
+
+#Create column for tool-tip text
+un.df$text <- paste("Handle: ", un.df$screenName, "<br>", "Followers: ", un.df$followersCount, "<br>", "Friends: ", un.df$friendsCount, "<br>", "Tweets: ", un.df$statusesCount, sep="")
+
+#Isolate columns for plotting
+un.df <- un.df[,c("cluster", "text", "logFollowersCount", "logFriendsCount", "followersCount", "friendsCount")]
+str(un.df)
+```
+
+```{r eval=FALSE, warnings=FALSE, message=FALSE}
+#Load Plot.ly
+library(plotly)
+p <- plotly(username="USERNAME", key="PASSWORD")
+```
+
+### Build Dataset for Plotly
+```{r warnings=FALSE, message=FALSE}
+data <- lapply(
+  seq(
+    length(
+      unique(userNeighbors.df$cluster)
+    )), 
+  function(i){
+    list(
+      x = as.vector(subset(un.df, drop=TRUE, cluster == i, logFollowersCount)),
+      y = as.vector(subset(un.df, drop=TRUE, cluster == i, logFriendsCount)),
+      text = as.vector(subset(un.df, drop=TRUE, cluster == i, text)),
+      name = as.vector(subset(un.df, drop=TRUE, cluster == i, cluster)),
+      mode = "markers",
+      marker = list(
+        line = list(
+          color = "white", 
+          width = 0.5
+        ), 
+        size = 12
+      ), 
+      type = "scatter"      
+    )
+  }
+)
+
+#Format Layout
+layout <- list(
+  showlegend = FALSE,
+  title = "Clusters of @plotlygraphs Twitter Followers (Top 1,500)",
+  xaxis = list(
+    title = "Followers (log scale)",
+    'autorange' = TRUE
+  ),
+  yaxis = list(
+    title = "Friends (log scale)",
+    'autorange' = TRUE
+  )
+)
+```
+
+### Push to Plot.ly, Open Browser to View Plot
+```{r eval=FALSE, warnings=FALSE, message=FALSE}
+response <- p$plotly(data, kwargs=list(layout=layout, filename='Clusters of @plotlygraphs Twitter Followers (Top 1,500)', fileopt="overwrite"))
+url <- response$url
+filename <- response$filename
+# browseURL(url)
+```
+
+<iframe id="igraph" style='border:none' src="https://plot.ly/~hianalytics/168/1000/800" width=1000 height=800 scrolling="no"></iframe>
+
+## Credits & Helpful Links
+
+- [http://rmarkdown.rstudio.com/index.html](http://rmarkdown.rstudio.com/index.html)
+- [http://www.r-bloggers.com/cluster-your-twitter-data-with-r-and-k-means/](http://www.r-bloggers.com/cluster-your-twitter-data-with-r-and-k-means/)
+- [http://rstudio-pubs-static.s3.amazonaws.com/5983_af66eca6775f4528a72b8e243a6ecf2d.html](http://rstudio-pubs-static.s3.amazonaws.com/5983_af66eca6775f4528a72b8e243a6ecf2d.html)
+- [http://blog.plot.ly/post/71637573256/the-power-of-bubble-charts](http://blog.plot.ly/post/71637573256/the-power-of-bubble-charts)
+- [https://plot.ly/r/bubblecharts/](https://plot.ly/r/bubblecharts/)
+- [https://plot.ly/r/line-and-scatter/](https://plot.ly/r/line-and-scatter/)
