@@ -3,7 +3,7 @@ Plot.ly
 
 ## *A Portfolio of Plot.ly Data Visualizations From e-Commerce*
 
-This is a place where I'll share code and instructions on how to create some of the data visualizations and analyses with Plot.ly.
+This is a place where I'll share code and instructions on how to create some of the data visualizations and analyses I work on with Plot.ly related to e-Commerce.
 
 Shoot me an email if you have any questions or leave a comment/open an issue.
 
