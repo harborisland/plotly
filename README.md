@@ -1,7 +1,7 @@
 Plot.ly
 ======
 
-## *A Portfolio of Plot.ly For e-Commerce Data Analysis*
+## *A Portfolio of Plot.ly Data Visualizations From e-Commerce*
 
 This is a place where I'll share code and instructions on how to create some of the data visualizations and analyses with Plot.ly.
 
