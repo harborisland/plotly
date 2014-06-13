@@ -1,4 +1,4 @@
-Plot.ly:
+Plot.ly
 ======
 
 ## *A Portfolio of Plot.ly For e-Commerce Data Analysis*
