@@ -1,29 +1,25 @@
-
 ---
-title: "K-Means Clustering of @plotlygraphs Twitter Followers"
-author: Justin Marciszewski
-date: June 12. 2014
 output:
   html_document:
-    theme: spacelab
     toc: true
-    toc_depth: 3
     number_sections: true
 ---
+
 
 The following is a step by step instructions on how to replicate what I've created:
 [https://plot.ly/~hianalytics/168](https://plot.ly/~hianalytics/168)
 
 The hardest part is step 1 but the rest is straightforward.
 
-Contact me if you have any questions.
+Feel free to reach out with any questions!
 
-Justin
-[](justin@harborislandanalytics.com)
+Justin  
+
+[justin@harborislandanalytics.com](justin@harborislandanalytics.com)
 
 ## Install Packages & Setup Twitter API 
 
-*[How To Link for Twitter API Setup](http://thinktostart.wordpress.com/2013/05/22/twitter-authentification-with-r/)*
+_*[How To Link for Twitter API Setup](http://thinktostart.wordpress.com/2013/05/22/twitter-authentification-with-r/)*_
 
 ```{r eval=FALSE, warnings=FALSE, message=FALSE}
 library(rmarkdown)
@@ -58,7 +54,7 @@ userNeighbors <- union(userFollowers, userFriends)
 userNeighbors.df = twListToDF(userNeighbors)
 ```
 
-*NOTE: I recommend that you save the data locally that you collected from Twitter.  That way you don't have to re-do the hardest step and call the API each time you re-start this analysis*
+_*NOTE: I recommend that you save the data locally that you collected from Twitter.  That way you don't have to re-do the hardest step and call the API each time you re-start this analysis*_
 
 ```{r eval=FALSE, warnings=FALSE, message=FALSE}
 setwd("/...") #set your working directory if not done already
@@ -67,7 +63,6 @@ write.csv(userNeighbors.df, "userNeighbors_df.csv")
 
 ```{r warnings=FALSE, message=FALSE}
 userNeighbors.df <- read.csv("userNeighbors_df.csv")
-str(userNeighbors.df)
 ```
 
 ---
@@ -96,18 +91,17 @@ for (i in 2:15) wss[i] <- sum(kmeans(mydata,
 
 plot(1:15, wss, type="b", xlab="Number of Clusters",
      ylab="Within groups sum of squares")
-
 ```
 
-#### *Seems like the "elbow" in the graph above is ~ 6 so we'll go with that in step 4...*
+_*Seems like the "elbow" in the graph above is ~ 4 so we'll go with that in step 4...*_
 
 ---
 
 ## k-means Clustering
 
 ```{r warnings=FALSE, message=FALSE}
-##Run the K Means algorithm, specifying centers (6 centers)
-user2Means.log <- kmeans(kObject.log, centers=6, iter.max=10, nstart=100)
+##Run the K Means algorithm, specifying centers (4 centers)
+user2Means.log <- kmeans(kObject.log, centers=4, iter.max=10, nstart=100)
 
 ##Add the vector of specified clusters back to the original vector as a factor
 userNeighbors.df$cluster <- factor(user2Means.log$cluster)
@@ -126,7 +120,6 @@ un.df$text <- paste("Handle: ", un.df$screenName, "<br>", "Followers: ", un.df$f
 
 #Isolate columns for plotting
 un.df <- un.df[,c("cluster", "text", "logFollowersCount", "logFriendsCount", "followersCount", "friendsCount")]
-str(un.df)
 ```
 
 ```{r eval=FALSE, warnings=FALSE, message=FALSE}
@@ -147,14 +140,13 @@ data <- lapply(
       x = as.vector(subset(un.df, drop=TRUE, cluster == i, logFollowersCount)),
       y = as.vector(subset(un.df, drop=TRUE, cluster == i, logFriendsCount)),
       text = as.vector(subset(un.df, drop=TRUE, cluster == i, text)),
-      name = as.vector(subset(un.df, drop=TRUE, cluster == i, cluster)),
       mode = "markers",
       marker = list(
         line = list(
           color = "white", 
           width = 0.5
         ), 
-        size = 12
+        size = 8
       ), 
       type = "scatter"      
     )
@@ -164,13 +156,13 @@ data <- lapply(
 #Format Layout
 layout <- list(
   showlegend = FALSE,
-  title = "Clusters of @plotlygraphs Twitter Followers (Top 1,500)",
+  title = "@plotlygraphs Friends vs Followers (Top 1,500) - Log 10 Scale",
   xaxis = list(
-    title = "Followers (log scale)",
+    title = "Log Followers Count",
     'autorange' = TRUE
   ),
   yaxis = list(
-    title = "Friends (log scale)",
+    title = "Log Friends Count",
     'autorange' = TRUE
   )
 )
@@ -181,10 +173,10 @@ layout <- list(
 response <- p$plotly(data, kwargs=list(layout=layout, filename='Clusters of @plotlygraphs Twitter Followers (Top 1,500)', fileopt="overwrite"))
 url <- response$url
 filename <- response$filename
-# browseURL(url)
+browseURL(url)
 ```
 
-<iframe id="igraph" style='border:none' src="https://plot.ly/~hianalytics/168/1000/800" width=1000 height=800 scrolling="no"></iframe>
+<iframe id="igraph" style='border:none' src="https://plot.ly/~hianalytics/168/800/600" width=800 height=600 scrolling="no"></iframe>
 
 ## Credits & Helpful Links
 
