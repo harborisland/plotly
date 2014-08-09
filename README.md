@@ -14,7 +14,7 @@ Justin
 ### Harbor Island Analytics Links:
 
 - [Main Site - harborislandanalytics.com](http://www.harborislandanalytics.com)
-- [GitHub Blog - harborisland.github.io](http://harborisland.github.io)
+- [Blog - medium.com/@harborisland](https://medium.com/@harborisland)
 
 
 ### Plot.ly Links:
